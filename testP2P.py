@@ -5,7 +5,7 @@ import time
 
 def client_simulation(port, nickname, messages_to_send, received_messages, ready_event, finished_event):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.settimeout(5)  # Increase timeout to allow more time for message delivery
+    client_socket.settimeout(5)
     client_socket.connect(('localhost', port))
     client_socket.send(nickname.encode('ascii'))
     response = client_socket.recv(1024).decode('ascii')
