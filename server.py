@@ -7,6 +7,8 @@ class Server:
         self.host = host
         self.port = port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         self.server.bind((self.host, self.port))
         self.server.listen()
         self.clients = []
@@ -20,13 +22,15 @@ class Server:
                     try:
                         client.send(message)
                     except:
-                        pass  # Handle error or removal of client
+                        client.close()
+                        self.clients.remove(client)
         else:
             for client in self.clients:
                 try:
                     client.send(message)
                 except:
-                    pass  # Handle error or removal of client
+                    client.close()
+                    self.clients.remove(client)
 
         # Empty the buffer and send to the newly connected client if exclude is specified
         if exclude:
@@ -37,6 +41,16 @@ class Server:
                 except:
                     pass  # Handle error
 
+    def disconnect_client(self, client):
+        if client in self.clients:
+            index = self.clients.index(client)
+            nickname = self.nicknames[index]
+            self.clients.remove(client)
+            self.nicknames.remove(nickname)
+            client.close()
+            self.broadcast(f'{nickname} left the chat!'.encode('ascii'))
+            print(f'{nickname} disconnected.')
+
     def handle(self, client):
         while True:
             try:
@@ -44,12 +58,7 @@ class Server:
                 self.broadcast(message)
                 self.message_buffer.put(message)  # Add incoming messages to buffer
             except:
-                index = self.clients.index(client)
-                self.clients.remove(client)
-                client.close()
-                nickname = self.nicknames[index]
-                self.nicknames.remove(nickname)
-                self.broadcast(f'{nickname} left the chat!'.encode('ascii'))
+                self.disconnect_client(client)
                 break
 
     def receive(self):
