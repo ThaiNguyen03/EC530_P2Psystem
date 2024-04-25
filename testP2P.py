@@ -4,6 +4,7 @@ import threading
 import time
 
 def client_simulation(port, nickname, messages_to_send, received_messages, ready_event, finished_event):
+
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.settimeout(5)
     client_socket.connect(('localhost', port))
@@ -37,6 +38,9 @@ def client_simulation(port, nickname, messages_to_send, received_messages, ready
 @pytest.fixture
 def setup_server():
     from server import Server
+    import time
+    time.sleep(5)
+
     server = Server()
     server_thread = threading.Thread(target=server.receive, daemon=True)
     server_thread.start()
@@ -45,6 +49,26 @@ def setup_server():
     server_thread.join(timeout=5)
     if server_thread.is_alive():
         print("Warning: Server thread did not terminate properly.")
+
+def test_single_client_connection(setup_server):
+    port = 55555
+    received_messages_client_test = []
+    ready_event_client_test = threading.Event()
+    finished_event = threading.Event()
+
+    client1_thread = threading.Thread(target=client_simulation, args=(port, 'Client1', [], received_messages_client_test, ready_event_client_test, finished_event))
+
+    client1_thread.start()
+
+    ready_event_client_test.wait()
+    finished_event.set()
+
+    client1_thread.join()
+
+    if received_messages_client_test:
+        assert 'Connected to the server!' in received_messages_client_test[0]
+    else:
+        assert False, "No messages received by Client1"
 def test_message_exchange(setup_server):
     port = 55555
     received_messages_client1 = []

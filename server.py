@@ -13,7 +13,7 @@ class Server:
         self.server.listen()
         self.clients = []
         self.nicknames = []
-        self.message_buffer = Queue()  # Message buffer for synchronization
+        self.message_buffer = Queue()
 
     def broadcast(self, message, exclude=None):
         if exclude is not None:
@@ -32,14 +32,14 @@ class Server:
                     client.close()
                     self.clients.remove(client)
 
-        # Empty the buffer and send to the newly connected client if exclude is specified
+
         if exclude:
             while not self.message_buffer.empty():
                 message = self.message_buffer.get()
                 try:
                     exclude.send(message)
                 except:
-                    pass  # Handle error
+                    pass
 
     def disconnect_client(self, client):
         if client in self.clients:
@@ -56,7 +56,7 @@ class Server:
             try:
                 message = client.recv(1024)
                 self.broadcast(message)
-                self.message_buffer.put(message)  # Add incoming messages to buffer
+                self.message_buffer.put(message)
             except:
                 self.disconnect_client(client)
                 break
@@ -77,6 +77,13 @@ class Server:
 
             thread = threading.Thread(target=self.handle, args=(client,))
             thread.start()
+    def stop(self):
+        for client in self.clients:
+            client.shutdown(socket.SHUT_RDWR)
+            client.close()
+        self.server.shutdown(socket.SHUT_RDWR)
+        self.server.close()
+        print("Server stopped")
 
 if __name__ == "__main__":
     server = Server()
