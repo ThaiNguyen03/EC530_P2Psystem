@@ -40,7 +40,7 @@ def write():
     while running.is_set():
         try:
             message = input()
-            if message.lower() == 'exit':
+            if message.lower() == 'exit*':
                 print("Exiting chat...")
                 running.clear()
                 break
